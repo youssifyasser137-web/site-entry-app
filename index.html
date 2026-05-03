@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiteEntry — Employee Access System</title>
+<!-- PWA Links -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0f14">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a22;
+    --surface2: #1e2430;
+    --border: #2a3040;
+    --accent: #f59e0b;
+    --accent2: #fcd34d;
+    --text: #e8ecf4;
+    --muted: #6b7a99;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --mono: 'Courier New', monospace;
+    --sans: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  .logo span { color: var(--text); }
+  .tagline { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 24px;
+    gap: 4px;
+  }
+  nav button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: var(--sans);
+    letter-spacing: 0.5px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .page { display: none; padding: 28px 24px; max-width: 960px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+
+  /* Forms */
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  input, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: var(--sans);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  .btn {
+    padding: 9px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-primary { background: var(--accent); color: #0d0f14; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: white; }
+  .btn-sm { padding: 5px 12px; font-size: 11px; }
+  .btn-info { background: transparent; color: var(--info); border: 1px solid var(--info); }
+  .btn-info:hover { background: var(--info); color: white; }
+
+  /* Employee table */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 10px 14px; color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); font-weight: 500; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge-allowed { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-denied { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-on-time { background: rgba(34,197,94,0.15); color: var(--success); }
+  .badge-late { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+  /* Avatar */
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .emp-cell { display: flex; align-items: center; gap: 10px; }
+
+  /* QR grid */
+  .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .qr-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .qr-canvas { background: white; border-radius: 6px; padding: 10px; display: inline-block; margin: 12px 0 8px; }
+  .qr-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .qr-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* Scanner */
+  #scanner-container {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 480px;
+    margin: 0 auto 20px;
+  }
+  #scanner-video { width: 100%; display: block; border-radius: 8px; }
+  #scanner-canvas { display: none; }
+  .scan-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; height: 200px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
+  }
+  .scan-line {
+    position: absolute;
+    width: 100%; height: 2px;
+    background: var(--accent);
+    animation: scan 2s linear infinite;
+    top: 0;
+  }
+  @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+  .result-box {
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .result-allowed { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.4); }
+  .result-denied { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); }
+  .result-icon { font-size: 48px; margin-bottom: 10px; }
+  .result-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .result-time { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .result-status { font-size: 13px; margin-top: 8px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .status-ok { color: var(--success); }
+  .status-late { color: #f59e0b; }
+  .status-denied { color: var(--danger); }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+
+  /* Logs filter */
+  .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .log-time { font-family: var(--mono); font-size: 12px; }
+
+  /* Scan btn */
+  .scan-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+  #manual-input { display: none; }
+  .manual-section { max-width: 480px; margin: 0 auto; }
+  .section-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+
+  .empty { color: var(--muted); text-align: center; padding: 32px; font-size: 14px; }
+
+  @media (max-width: 600px) {
+    nav button { padding: 10px 10px; font-size: 11px; }
+    .form-row { flex-direction: column; }
+    input { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">SITE<span>ENTRY</span></div>
+    <div class="tagline">Employee Access Control System</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('admin')">Admin</button>
+  <button onclick="showPage('qrcodes')">QR Codes</button>
+  <button onclick="showPage('scanner')">Scanner</button>
+  <button onclick="showPage('logs')">Entry Logs</button>
+</nav>
+
+<!-- ADMIN PAGE -->
+<div id="page-admin" class="page active">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Add Employee</span>
+    </div>
+    <div class="form-row">
+      <input id="emp-name" placeholder="Full name" style="flex:2; min-width:160px;" />
+      <input id="emp-dept" placeholder="Department" style="flex:1; min-width:120px;" />
+      <select id="emp-shift" style="min-width:130px;">
+        <option value="08:00">Shift 08:00</option>
+        <option value="09:00">Shift 09:00</option>
+        <option value="10:00">Shift 10:00</option>
+        <option value="06:00">Shift 06:00</option>
+      </select>
+      <button class="btn btn-primary" onclick="addEmployee()">+ Add</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Employee List</span>
+      <span id="emp-count" style="font-size:12px;color:var(--muted);">0 employees</span>
+    </div>
+    <div id="emp-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Shift</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="emp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- QR CODES PAGE -->
+<div id="page-qrcodes" class="page">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+      <span class="card-title">Employee QR Codes</span>
+      <span style="font-size:12px;color:var(--muted);">Show these to security scanner</span>
+    </div>
+    <div id="qr-grid" class="qr-grid"></div>
+  </div>
+</div>
+
+<!-- SCANNER PAGE -->
+<div id="page-scanner" class="page">
+  <div class="card" style="max-width:540px;margin:0 auto;">
+    <div class="card-header">
+      <span class="card-title">Security Scanner</span>
+      <span id="live-clock" style="font-family:var(--mono);font-size:14px;color:var(--accent);"></span>
+    </div>
+
+    <div class="scan-controls">
+      <button class="btn btn-primary" id="start-scan-btn" onclick="startCamera()">Start Camera Scan</button>
+      <button class="btn btn-info" onclick="toggleManual()">Manual ID Entry</button>
+    </div>
+
+    <div id="scanner-container" style="display:none;">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <canvas id="scanner-canvas"></canvas>
+      <div class="scan-overlay"><div class="scan-line"></div></div>
+    </div>
+    <div style="text-align:center;margin-bottom:10px;">
+      <button class="btn btn-danger btn-sm" id="stop-scan-btn" onclick="stopCamera()" style="display:none;">Stop Camera</button>
+    </div>
+
+    <div id="manual-input" class="manual-section">
+      <div class="section-label">Enter Employee ID</div>
+      <div class="form-row">
+        <input id="manual-id" placeholder="e.g. EMP-001" style="flex:1;" onkeydown="if(event.key==='Enter')manualCheck()" />
+        <button class="btn btn-primary" onclick="manualCheck()">Check In</button>
+      </div>
+    </div>
+
+    <div id="scan-result"></div>
+  </div>
+</div>
+
+<!-- LOGS PAGE -->
+<div id="page-logs" class="page">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Today's Entries</div><div class="stat-value" id="stat-today">0</div></div>
+    <div class="stat-card"><div class="stat-label">On Time</div><div class="stat-value" id="stat-ontime" style="color:var(--success);">0</div></div>
+    <div class="stat-card"><div class="stat-label">Late Arrivals</div><div class="stat-value" id="stat-late" style="color:#f59e0b;">0</div></div>
+    <div class="stat-card"><div class="stat-label">Denied</div><div class="stat-value" id="stat-denied" style="color:var(--danger);">0</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Entry Log</span>
+      <button class="btn btn-danger btn-sm" onclick="clearLogs()">Clear All Logs</button>
+    </div>
+    <div class="filter-row">
+      <input type="date" id="filter-date" onchange="renderLogs()" style="width:160px;" />
+      <select id="filter-status" onchange="renderLogs()" style="width:140px;">
+        <option value="">All entries</option>
+        <option value="ON TIME">On Time</option>
+        <option value="LATE">Late</option>
+        <option value="DENIED">Denied</option>
+      </select>
+      <button class="btn btn-sm" onclick="document.getElementById('filter-date').value='';document.getElementById('filter-status').value='';renderLogs();" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);">Reset</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Date</th>
+          <th>Time In</th>
+          <th>Shift</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="logs-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let employees = [];
+let logs = [];
+let scanning = false;
+let stream = null;
+let animFrame = null;
+
+const STORAGE_EMP = 'siteentry-employees';
+const STORAGE_LOG = 'siteentry-logs';
+
+async function loadData() {
+  try {
+    const e = await localStorage.getItem(STORAGE_EMP);
+    if (e) employees = JSON.parse(e);
+  } catch(_) {}
+  try {
+    const l = await localStorage.getItem(STORAGE_LOG);
+    if (l) logs = JSON.parse(l);
+  } catch(_) {}
+  if (!employees.length) seedEmployees();
+  renderAdmin();
+}
+
+function seedEmployees() {
+  employees = [
+    { id: 'EMP-001', name: 'Ahmed Hassan', dept: 'Engineering', shift: '08:00', allowed: true },
+    { id: 'EMP-002', name: 'Sara Al-Mansouri', dept: 'Operations', shift: '08:00', allowed: true },
+    { id: 'EMP-003', name: 'Khalid Ibrahim', dept: 'Maintenance', shift: '08:00', allowed: true },
+    { id: 'EMP-004', name: 'Fatima Noor', dept: 'Safety', shift: '08:00', allowed: false },
+  ];
+  saveEmployees();
+}
+
+async function saveEmployees() {
+  try { await localStorage.setItem(STORAGE_EMP, JSON.stringify(employees)); } catch(_) {}
+  renderAdmin();
+}
+
+async function saveLogs() {
+  try { await localStorage.setItem(STORAGE_LOG, JSON.stringify(logs)); } catch(_) {}
+}
+
+function genId() {
+  const nums = employees.map(e => parseInt(e.id.replace('EMP-',''))||0);
+  const next = (Math.max(0,...nums) + 1).toString().padStart(3,'0');
+  return 'EMP-' + next;
+}
+
+function addEmployee() {
+  const name = document.getElementById('emp-name').value.trim();
+  const dept = document.getElementById('emp-dept').value.trim();
+  const shift = document.getElementById('emp-shift').value;
+  if (!name) return alert('Please enter a name.');
+  employees.push({ id: genId(), name, dept: dept||'General', shift, allowed: true });
+  saveEmployees();
+  document.getElementById('emp-name').value = '';
+  document.getElementById('emp-dept').value = '';
+}
+
+function toggleAllowed(id) {
+  const e = employees.find(x => x.id === id);
+  if (e) { e.allowed = !e.allowed; saveEmployees(); }
+}
+
+function removeEmployee(id) {
+  if (!confirm('Remove this employee?')) return;
+  employees = employees.filter(x => x.id !== id);
+  saveEmployees();
+}
+
+function initials(name) {
+  return name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+}
+
+function renderAdmin() {
+  const tbody = document.getElementById('emp-tbody');
+  document.getElementById('emp-count').textContent = employees.length + ' employees';
+  if (!employees.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No employees. Add one above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = employees.map(e => `
+    <tr>
+      <td><div class="emp-cell"><div class="avatar">${initials(e.name)}</div><div><div style="font-weight:500;font-size:14px;">${e.name}</div><div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${e.id}</div></div></div></td>
+      <td style="color:var(--muted);font-size:13px;">${e.dept}</td>
+      <td style="font-family:var(--mono);font-size:13px;">${e.shift}</td>
+      <td><span class="badge ${e.allowed?'badge-allowed':'badge-denied'}">${e.allowed?'Allowed':'Denied'}</span></td>
+      <td style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn-sm" onclick="toggleAllowed('${e.id}')" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);">${e.allowed?'Revoke':'Allow'}</button>
+        <button class="btn btn-danger btn-sm" onclick="removeEmployee('${e.id}')">Remove</button>
+      </td>
+    </tr>`).join('');
+}
+
+function renderQRCodes() {
+  const grid = document.getElementById('qr-grid');
+  grid.innerHTML = '';
+  if (!employees.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No employees found. Add employees in Admin tab.</div>';
+    return;
+  }
+  employees.filter(e=>e.allowed).forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'qr-card';
+    div.innerHTML = `
+      <div class="qr-name">${e.name}</div>
+      <div class="qr-id">${e.id} &bull; ${e.dept}</div>
+      <div class="qr-canvas" id="qr-${e.id}"></div>
+      <div style="font-size:11px;color:var(--muted);">Shift: ${e.shift}</div>`;
+    grid.appendChild(div);
+    setTimeout(() => {
+      new QRCode(document.getElementById('qr-'+e.id), {
+        text: e.id,
+        width: 140, height: 140,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }, 50);
+  });
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'qrcodes') renderQRCodes();
+  if (name === 'logs') renderLogs();
+  if (name !== 'scanner') stopCamera();
+}
+
+function startCamera() {
+  document.getElementById('scanner-container').style.display = 'block';
+  document.getElementById('start-scan-btn').style.display = 'none';
+  document.getElementById('stop-scan-btn').style.display = 'inline-block';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(s => {
+      stream = s;
+      const video = document.getElementById('scanner-video');
+      video.srcObject = s;
+      video.play();
+      scanning = true;
+      requestAnimationFrame(scanFrame);
+    })
+    .catch(() => {
+      alert('Camera not available. Use Manual ID Entry instead.');
+      stopCamera();
+    });
+}
+
+function stopCamera() {
+  scanning = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  document.getElementById('scanner-container').style.display = 'none';
+  document.getElementById('start-scan-btn').style.display = 'inline-block';
+  document.getElementById('stop-scan-btn').style.display = 'none';
+}
+
+function scanFrame() {
+  if (!scanning) return;
+  const video = document.getElementById('scanner-video');
+  const canvas = document.getElementById('scanner-canvas');
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, canvas.width, canvas.height);
+    if (code && code.data) {
+      stopCamera();
+      processEntry(code.data);
+      return;
+    }
+  }
+  animFrame = requestAnimationFrame(scanFrame);
+}
+
+function toggleManual() {
+  const el = document.getElementById('manual-input');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block') document.getElementById('manual-id').focus();
+}
+
+function manualCheck() {
+  const id = document.getElementById('manual-id').value.trim().toUpperCase();
+  if (!id) return;
+  processEntry(id);
+  document.getElementById('manual-id').value = '';
+}
+
+function processEntry(empId) {
+  const emp = employees.find(e => e.id === empId);
+  const now = new Date();
+  const timeStr = now.toTimeString().slice(0,8);
+  const dateStr = now.toLocaleDateString('en-GB');
+  const resultBox = document.getElementById('scan-result');
+
+  if (!emp) {
+    resultBox.innerHTML = `<div class="result-box result-denied">
+      <div class="result-icon">✗</div>
+      <div class="result-name" style="color:var(--danger);">Unknown ID</div>
+      <div class="result-time">${timeStr} &bull; ${dateStr}</div>
+      <div class="result-status status-denied">Access Denied</div>
+    </div>`;
+    logEntry({ id:'UNKNOWN', name:'Unknown', dept:'-', shift:'-', time: timeStr, date: dateStr, status:'DENIED', timestamp: now.toISOString() });
+    setTimeout(() => resultBox.innerHTML = '', 4000);
+    return;
+  }
+
+  if (!emp.allowed) {
+    resultBox.innerHTML = `<div class="result-box result-denied">
+      <div class="result-icon">✗</div>
+      <div class="result-name" style="color:var(--danger);">${emp.name}</div>
+      <div class="result-time">${emp.id} &bull; ${emp.dept}</div>
+      <div class="result-time">${timeStr} &bull; ${dateStr}</div>
+      <div class="result-status status-denied">Access Revoked — Not Allowed</div>
+    </div>`;
+    logEntry({ id: emp.id, name: emp.name, dept: emp.dept, shift: emp.shift, time: timeStr, date: dateStr, status:'DENIED', timestamp: now.toISOString() });
+    setTimeout(() => resultBox.innerHTML = '', 4000);
+    return;
+  }
+
+  const [sh, sm] = emp.shift.split(':').map(Number);
+  const shiftMins = sh * 60 + sm;
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const diff = nowMins - shiftMins;
+  const late = diff > 5;
+  const status = late ? 'LATE' : 'ON TIME';
+  const lateMsg = late ? ` (${diff} min late)` : '';
+
+  resultBox.innerHTML = `<div class="result-box result-allowed">
+    <div class="result-icon">✓</div>
+    <div class="result-name" style="color:var(--success);">${emp.name}</div>
+    <div class="result-time">${emp.id} &bull; ${emp.dept}</div>
+    <div class="result-time">${timeStr} &bull; ${dateStr}</div>
+    <div class="result-status ${late?'status-late':'status-ok'}">${status}${lateMsg}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px;">Shift: ${emp.shift}</div>
+  </div>`;
+
+  logEntry({ id: emp.id, name: emp.name, dept: emp.dept, shift: emp.shift, time: timeStr, date: dateStr, status, timestamp: now.toISOString() });
+  setTimeout(() => resultBox.innerHTML = '', 5000);
+}
+
+function logEntry(entry) {
+  logs.unshift(entry);
+  if (logs.length > 1000) logs = logs.slice(0, 1000);
+  saveLogs();
+}
+
+function renderLogs() {
+  const tbody = document.getElementById('logs-tbody');
+  const filterDate = document.getElementById('filter-date').value;
+  const filterStatus = document.getElementById('filter-status').value;
+  const today = new Date().toLocaleDateString('en-GB');
+
+  let filtered = logs;
+  if (filterDate) {
+    const d = new Date(filterDate).toLocaleDateString('en-GB');
+    filtered = filtered.filter(l => l.date === d);
+  }
+  if (filterStatus) {
+    filtered = filtered.filter(l => l.status === filterStatus);
+  }
+
+  const todayLogs = logs.filter(l => l.date === today);
+  document.getElementById('stat-today').textContent = todayLogs.length;
+  document.getElementById('stat-ontime').textContent = todayLogs.filter(l=>l.status==='ON TIME').length;
+  document.getElementById('stat-late').textContent = todayLogs.filter(l=>l.status==='LATE').length;
+  document.getElementById('stat-denied').textContent = todayLogs.filter(l=>l.status==='DENIED').length;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No entries found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(l => `
+    <tr>
+      <td><div class="emp-cell"><div class="avatar" style="font-size:10px;">${l.name==='Unknown'?'?':initials(l.name)}</div><div><div style="font-weight:500;font-size:14px;">${l.name}</div><div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${l.id}</div></div></div></td>
+      <td style="color:var(--muted);font-size:13px;">${l.dept}</td>
+      <td style="font-size:13px;color:var(--muted);">${l.date}</td>
+      <td class="log-time" style="color:var(--accent);">${l.time}</td>
+      <td class="log-time" style="color:var(--muted);">${l.shift||'-'}</td>
+      <td><span class="badge ${l.status==='ON TIME'?'badge-allowed':'badge-denied'}">${l.status}</span></td>
+    </tr>`).join('');
+}
+
+function clearLogs() {
+  if (!confirm('Clear all entry logs?')) return;
+  logs = [];
+  saveLogs();
+  renderLogs();
+}
+
+function updateClock() {
+  const el = document.getElementById('live-clock');
+  if (el) el.textContent = new Date().toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful');
+      })
+      .catch(err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>
